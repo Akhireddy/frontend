@@ -17,8 +17,7 @@ resource "aws_ec2_tag" "spot-instances" {
   value       = "${var.COMPONENT}-${var.ENV}-${count.index + 1}"
 }
 
-
-resource "aws_lb_target_group" "tg"
+resource "aws_lb_target_group" "tg" {
     name      = "${var.ENV}-${var.COMPONENT}"
     port      = 80
     protocol  = "HTTP"
@@ -30,4 +29,15 @@ resource "aws_lb_target_group_attachment" "tg-attach" {
    target_group_arm  =  aws_lb_target_group.tg.arm
    target_id         = aws_spot_instance_request.ec2-spot.*.spot_instance_id[count.index]
    port              = 80
+}
+
+resource "aws_lb_listener" "lb_listener" {
+  load_balancer_arn = data.terraform_remote_state.alb.outputs.PUBLIC_LB_ARN
+  port              = "80"
+  protocol          = "HTTP"
+
+  default_action {
+    type             = "forward"
+    target_group_arn = aws_lb_target_group.tg.arn
+  }
 }
